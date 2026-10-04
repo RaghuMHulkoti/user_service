@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: ${TEST_DB_URL:jdbc:postgresql://localhost:5432/users_test}
+app:
+  security:
+    bcrypt-strength: 4
+  outbox:
+    poll-interval: 200ms
+  dev:
+    log-tokens: false

@@ -1,3 +1,98 @@
 spring:
   application:
-    name: user_service
+    name: user-service
+  profiles:
+    default: dev
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/users_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:1234}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 500ms
+      connect-timeout: 500ms
+    web:
+      pageable:
+        max-page-size: 100
+  cache:
+    type: redis
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
+        max.block.ms: 3000
+
+server:
+  port: ${SERVER_PORT:8081}
+  forward-headers-strategy: native
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  security:
+    issuer: ${JWT_ISSUER:http://user-service}
+    tenant-id: bazaar
+    access-token-ttl: 15m
+    refresh-token-ttl: 30d
+    bcrypt-strength: 12
+    # PEM files for the RS256 key pair. When empty, a key pair is generated at startup
+    # (fine for local dev; every restart then invalidates issued access tokens).
+    private-key-location: ${JWT_PRIVATE_KEY_LOCATION:}
+    public-key-location: ${JWT_PUBLIC_KEY_LOCATION:}
+    key-id: ${JWT_KEY_ID:user-service-key-1}
+    # Shared secret for /api/v1/internal/** (stand-in for mTLS, see README).
+    internal-service-token: ${INTERNAL_SERVICE_TOKEN:change-me-internal-token}
+    max-failed-logins: 5
+    lockout-duration: 15m
+  rate-limit:
+    login-per-ip-per-minute: 5
+    login-per-account-per-hour: 10
+    password-reset-per-account-per-hour: 3
+  tokens:
+    email-verification-ttl: 24h
+    password-reset-ttl: 30m
+  idempotency:
+    ttl: 24h
+  events:
+    # log  = print events to the log (no broker needed)
+    # kafka = publish to Kafka topic below
+    publisher: ${EVENTS_PUBLISHER:log}
+    topic: domain.user.events
+  outbox:
+    poll-interval: 1000ms
+    batch-size: 100
+  dev:
+    # Print raw verification / reset tokens to the log so flows can be tested without email.
+    log-tokens: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+app:
+  dev:
+    log-tokens: true
