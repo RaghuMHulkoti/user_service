@@ -70,6 +70,10 @@ management:
     web:
       exposure:
         include: health,info,metrics
+  health:
+    # Redis is optional here (rate limits and the profile cache fail open), so its absence is not a health problem
+    redis:
+      enabled: ${REDIS_HEALTH_ENABLED:false}
 
 springdoc:
   swagger-ui:
