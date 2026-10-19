@@ -1,8 +1,8 @@
 spring:
   application:
     name: user-service
-  profiles:
-    default: dev
+  # No default profile: the dev profile prints one-time tokens to the log, so it must be chosen explicitly
+  # (SPRING_PROFILES_ACTIVE=dev) and never runs in production by accident.
   datasource:
     # Shared Autonomous DB (same wallet and ADMIN login as the other services); this service owns the USERS schema.
     url: ${DB_URL:jdbc:oracle:thin:@ecommerce_tp?TNS_ADMIN=${WALLET_DIR:/Users/raghavendra/Downloads/Wallet_ECOMMERCE}}
