@@ -1,0 +1,17 @@
+package com.learning.user_service.core.service.address.update;
+
+import com.learning.user_service.core.service.ServiceResponse;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import com.learning.user_service.gateway.oracle.address.entity.AddressEntity;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UpdateAddressServiceResponse implements ServiceResponse {
+
+    private AddressEntity address;
+}

@@ -1,6 +1,6 @@
 package com.learning.user_service.support;
 
-import com.learning.user_service.infrastructure.config.AppProperties;
+import com.learning.user_service.config.AppProperties;
 
 import java.time.Duration;
 

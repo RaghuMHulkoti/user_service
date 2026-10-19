@@ -1,6 +1,23 @@
 spring:
   datasource:
-    url: ${TEST_DB_URL:jdbc:postgresql://localhost:5432/users_test}
+    # H2 in Oracle mode; the migrations are run by spring.sql.init (see UserFlowIntegrationTest)
+    # one database per Spring context, so tests with different settings do not re-run the schema on a shared one
+    url: jdbc:h2:mem:users_${random.uuid};MODE=Oracle;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+    hikari:
+      connection-test-query: SELECT 1
+  jpa:
+    properties:
+      hibernate:
+        default_schema: PUBLIC
+  flyway:
+    enabled: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/migration/V1__init_users_schema.sql,classpath:db/migration/V2__auth_support_tables.sql,classpath:db/migration/V3__refresh_tokens.sql
 app:
   security:
     bcrypt-strength: 4

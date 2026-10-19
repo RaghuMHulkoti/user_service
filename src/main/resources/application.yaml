@@ -4,20 +4,34 @@ spring:
   profiles:
     default: dev
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/users_db}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:1234}
+    # Shared Autonomous DB (same wallet and ADMIN login as the other services); this service owns the USERS schema.
+    url: ${DB_URL:jdbc:oracle:thin:@ecommerce_tp?TNS_ADMIN=${WALLET_DIR:/Users/raghavendra/Downloads/Wallet_ECOMMERCE}}
+    username: ${DB_USERNAME:ADMIN}
+    password: ${DB_PASSWORD}
+    driver-class-name: oracle.jdbc.OracleDriver
+    hikari:
+      connection-test-query: SELECT 1 FROM DUAL
+      maximum-pool-size: 3
+      minimum-idle: 0
+      connection-timeout: 30000
+      idle-timeout: 600000
   jpa:
     open-in-view: false
     hibernate:
+      # Flyway owns the schema; Hibernate only maps onto it
       ddl-auto: none
     properties:
       hibernate:
         jdbc:
           time_zone: UTC
+        # qualify every entity table with the service schema instead of relying on the session's CURRENT_SCHEMA
+        # (USER is a reserved word in Oracle, hence USERS)
+        default_schema: USERS
   flyway:
     enabled: true
     locations: classpath:db/migration
+    schemas: USERS
+    default-schema: USERS
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -30,12 +44,22 @@ spring:
   cache:
     type: redis
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:production-fgivv4.eu.cluster.ntail.io:9092}
+    # Cloud cluster login. Only the password is a secret: set KAFKA_PASSWORD in the environment, never in this file.
+    # For a local plaintext broker set KAFKA_SECURITY_PROTOCOL=PLAINTEXT and KAFKA_BOOTSTRAP_SERVERS=localhost:9092.
+    properties:
+      security.protocol: ${KAFKA_SECURITY_PROTOCOL:SASL_SSL}
+      sasl.mechanism: PLAIN
+      sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="${KAFKA_USERNAME:default}" password="${KAFKA_PASSWORD:}";
     producer:
       acks: all
       properties:
         enable.idempotence: true
         max.block.ms: 3000
+
+# Browser origins allowed to call the public API (comma separated), e.g. the order console and the supplier portal.
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:}
 
 server:
   port: ${SERVER_PORT:8081}
@@ -52,6 +76,8 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  # oracle = refresh tokens in the USERS schema (no Redis needed); redis = keep them in Redis
+  refresh-token-store: ${REFRESH_TOKEN_STORE:oracle}
   security:
     issuer: ${JWT_ISSUER:http://user-service}
     tenant-id: bazaar

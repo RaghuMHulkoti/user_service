@@ -6,17 +6,16 @@ It handles accounts, login, profile, addresses, saved payment methods (PSP token
 
 ## Run it
 
-You need Java 25, PostgreSQL and Redis running on your machine.
+You need Java 25, Redis, and the Oracle wallet of the shared Autonomous DB (the same one the other services use).
 
 ```bash
-createdb users_db             # once
 brew services start redis     # if Redis is not running
-./mvnw spring-boot:run
+DB_PASSWORD=... ./mvnw spring-boot:run
 ```
 
 - The app runs on http://localhost:8081.
 - Swagger UI: http://localhost:8081/swagger-ui.html
-- Flyway creates the tables when the app starts.
+- Flyway creates the `USERS` schema and its tables when the app starts. (`USER` is a reserved word in Oracle, so the schema is `USERS`.)
 
 The default profile is `dev`. In `dev`, the raw email-verification and password-reset tokens are printed to the log, so you can test those flows without an email service:
 
@@ -28,7 +27,8 @@ The default profile is `dev`. In `dev`, the raw email-verification and password-
 
 | Variable | Default | What it does |
 |---|---|---|
-| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | `jdbc:postgresql://localhost:5432/users_db` / `postgres` / `1234` | Database |
+| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | wallet URL (`ecommerce_tp`) / `ADMIN` / none, you must set it | Database |
+| `WALLET_DIR` | `/Users/raghavendra/Downloads/Wallet_ECOMMERCE` | Wallet folder. In Docker, set `WALLET_CWALLET_B64` and the entrypoint builds it. |
 | `REDIS_HOST` / `REDIS_PORT` | `localhost` / `6379` | Refresh tokens, rate limits, profile cache |
 | `EVENTS_PUBLISHER` | `log` | `log` prints events to the log. `kafka` sends them to Kafka. |
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Used only when `EVENTS_PUBLISHER=kafka` |
@@ -109,12 +109,12 @@ Code layout follows TDD §19: `domain` (pure Java: enums, events, ports, passwor
 ## Tests
 
 ```bash
-createdb users_test
 ./mvnw test
 ```
 
 - Unit tests have no dependencies.
-- Integration tests use the local `users_test` database and Redis. They are skipped when Postgres or Redis is not running. There are no Testcontainers tests, because Docker is not required.
+- `OraclePersistenceTest` runs the real migrations on H2 in Oracle mode. It needs nothing else, but it is not a substitute for a run against Oracle.
+- `UserFlowIntegrationTest` (the full HTTP flow) uses H2 plus a local Redis. It is skipped when Redis is not running.
 
 ## Not built (outside this service, or needs infrastructure)
 

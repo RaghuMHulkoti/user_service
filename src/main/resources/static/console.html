@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Account Console</title>
+<style>
+/* The identity side of the platform: who a customer is. Same workbench look as the order console and supplier portal. */
+:root {
+  --bg: #f3f5f4; --panel: #ffffff; --ink: #17211f; --muted: #5b6a66; --line: #d5dcda;
+  --accent: #0d6b5f; --accent-ink: #ffffff; --accent-soft: #dcefeb;
+  --ok: #17683a; --ok-soft: #dcf1e3; --warn: #8a5a00; --warn-soft: #fbecc8; --bad: #a3271f; --bad-soft: #f8dcd9;
+  --code-bg: #eaeeed;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1514; --panel: #172120; --ink: #e5eeec; --muted: #92a39f; --line: #2b3a37;
+    --accent: #3fb8a5; --accent-ink: #06201c; --accent-soft: #1b3a35;
+    --ok: #6fd391; --ok-soft: #173b27; --warn: #f0c46a; --warn-soft: #3b2f10; --bad: #f19489; --bad-soft: #442020;
+    --code-bg: #101918; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1514; --panel: #172120; --ink: #e5eeec; --muted: #92a39f; --line: #2b3a37;
+  --accent: #3fb8a5; --accent-ink: #06201c; --accent-soft: #1b3a35;
+  --ok: #6fd391; --ok-soft: #173b27; --warn: #f0c46a; --warn-soft: #3b2f10; --bad: #f19489; --bad-soft: #442020;
+  --code-bg: #101918; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-size: 14px; line-height: 1.45; margin: 0; padding-inline: 16px; padding-block: 16px 40px; }
+h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px; font-weight: 650; }
+h3 { font-size: 14px; margin: 0 0 6px; }
+.wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 16px; }
+header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; }
+header p { margin: 0; color: var(--muted); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.between { justify-content: space-between; }
+.grid2 { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.cols { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+.stack { display: grid; gap: 16px; min-width: 0; }
+.tight { display: grid; gap: 10px; }
+label { display: grid; gap: 3px; font-size: 12px; color: var(--muted); min-width: 0; }
+label.check { display: flex; gap: 8px; align-items: center; color: var(--ink); font-size: 14px; }
+label.check input { width: auto; }
+input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; min-width: 0; width: 100%; }
+button { font: inherit; font-weight: 600; cursor: pointer; border-radius: 6px; padding: 7px 12px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.danger { color: var(--bad); border-color: var(--bad); }
+button.link { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; font-weight: 500; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+a { color: var(--accent); }
+.mono { font-family: var(--mono); font-size: 12px; overflow-wrap: anywhere; }
+.muted { color: var(--muted); }
+.note { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+.msg { margin-top: 8px; font-size: 13px; }
+.msg.ok { color: var(--ok); } .msg.bad { color: var(--bad); }
+.list { display: grid; gap: 8px; }
+.item { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.item > div { min-width: 0; }
+.chip { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 999px; background: var(--code-bg); color: var(--muted); }
+.chip.ok { background: var(--ok-soft); color: var(--ok); } .chip.warn { background: var(--warn-soft); color: var(--warn); } .chip.bad { background: var(--bad-soft); color: var(--bad); }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: var(--code-bg); border-radius: 12px; width: fit-content; max-width: 100%; }
+.seg button { border: 0; background: transparent; padding: 7px 14px; border-radius: 9px; font-weight: 600; color: var(--muted); }
+.seg button[aria-selected="true"] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.notice { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--accent-soft); }
+.notice.warn { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
+.hero { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.avatar { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; font-weight: 750; color: #fff; }
+details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.log { background: var(--code-bg); border-radius: 6px; padding: 8px; max-height: 260px; overflow: auto; font-family: var(--mono); font-size: 12px; }
+.log div { padding: 3px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.log summary { cursor: pointer; color: var(--ink); }
+.log pre { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* ===== iOS-style motion and surfaces (shared look of the order console and the supplier portal) ===== */
+:root { --ease: cubic-bezier(0.32, 0.72, 0, 1); --spring: cubic-bezier(0.34, 1.56, 0.64, 1); --shadow: 0 1px 2px rgba(0,0,0,0.05), 0 10px 28px rgba(0,0,0,0.06); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px rgba(0,0,0,0.35); } }
+:root[data-theme="dark"] { --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px rgba(0,0,0,0.35); }
+html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif; -webkit-font-smoothing: antialiased; transition: background-color .4s var(--ease), color .4s var(--ease); }
+.panel { border-radius: 18px; box-shadow: var(--shadow); transition: background-color .4s var(--ease), border-color .4s var(--ease), box-shadow .4s var(--ease), transform .5s var(--ease); }
+input, select, textarea { border-radius: 10px; transition: border-color .2s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease); }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+button { border-radius: 12px; transition: transform .35s var(--spring), background-color .25s var(--ease), box-shadow .3s var(--ease), opacity .25s var(--ease), border-color .25s var(--ease); }
+button:hover:not(:disabled) { box-shadow: 0 4px 14px rgba(0,0,0,0.12); transform: translateY(-1px); }
+button:active:not(:disabled) { transform: scale(0.96); transition-duration: .12s; box-shadow: none; }
+.chip { transition: background-color .35s var(--ease), color .35s var(--ease); }
+
+/* sticky frosted bar with a large title that condenses on scroll, like a navigation bar */
+header { position: sticky; top: 8px; z-index: 20; padding: 12px 18px; border-radius: 20px;
+  background: color-mix(in srgb, var(--panel) 72%, transparent); -webkit-backdrop-filter: saturate(180%) blur(22px); backdrop-filter: saturate(180%) blur(22px);
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); box-shadow: var(--shadow); align-items: center; transition: padding .45s var(--ease), box-shadow .45s var(--ease); }
+header > div:first-child { flex: 1 1 420px; min-width: 0; }
+header > .row, header > div.row { flex: 0 0 auto; }
+header h1 { font-size: 28px; font-weight: 750; transition: font-size .45s var(--ease); }
+header .role { margin: 2px 0 0; color: var(--muted); max-height: 64px; overflow: hidden; transition: max-height .45s var(--ease), opacity .3s var(--ease), margin .45s var(--ease); }
+header .role b { color: var(--accent); font-weight: 650; }
+header.condensed { padding-block: 8px; }
+header.condensed h1 { font-size: 17px; }
+header.condensed .role { max-height: 0; opacity: 0; margin: 0; }
+
+/* entrance: sections rise in one after another; new rows, cards and log lines settle in */
+@keyframes rise { from { opacity: 0; transform: translateY(22px) scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes settle { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes flash { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@keyframes pop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
+.wrap > * { animation: rise .75s var(--ease) both; animation-delay: calc(var(--i, 0) * 70ms); }
+header { animation-name: rise; }
+.card, .item, .timeline li, .log > div { animation: settle .5s var(--ease) both; }
+#tItems .item, #flow .node { animation: none; }
+.flash { animation: flash .45s var(--ease); }
+.skeleton { border-radius: 14px; min-height: 150px; background: linear-gradient(100deg, var(--code-bg, var(--soft)) 30%, color-mix(in srgb, var(--panel) 80%, var(--line)) 50%, var(--code-bg, var(--soft)) 70%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
+.card { border-radius: 16px; transition: transform .5s var(--ease), box-shadow .4s var(--ease); }
+.card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+.item { border-radius: 14px; transition: background-color .3s var(--ease), border-color .3s var(--ease); }
+
+/* progress and state changes animate instead of jumping */
+.steps li, .flow .node { border-radius: 12px; transition: background-color .5s var(--ease), border-color .5s var(--ease), color .5s var(--ease), transform .5s var(--spring); }
+.steps li.done, .flow .node.ok { transform: scale(1.02); }
+.steps li.current { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent); }
+fieldset.fs { transition: opacity .5s var(--ease), filter .5s var(--ease); }
+fieldset.fs:disabled { filter: saturate(0.4); }
+.lock { animation: flash .45s var(--ease); }
+details > *:not(summary) { animation: settle .4s var(--ease); }
+
+/* phones: one column, comfortable touch targets, the bar stays compact */
+@media (max-width: 640px) {
+  body { padding-inline: 12px; }
+  header { top: 6px; padding: 10px 14px; border-radius: 18px; }
+  header h1 { font-size: 24px; }
+  header.condensed h1 { font-size: 16px; }
+  .panel { padding: 14px; border-radius: 16px; }
+  button { min-height: 44px; }
+  input, select, textarea { min-height: 44px; font-size: 16px; }
+  .grid2 { grid-template-columns: minmax(0, 1fr); }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .row { gap: 8px; }
+  .item { padding: 10px 12px; }
+  .log { max-height: 220px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Account Console</h1>
+      <p class="role"><b>Responsibility:</b> manage who a customer is: accounts and sign-in, profile, delivery addresses, saved payment methods and consent.</p>
+    </div>
+    <div class="row">
+      <a id="orderLink" href="#" target="_blank" rel="noopener">Order console</a>
+      <a id="supplierLink" href="#" target="_blank" rel="noopener">Supplier portal</a>
+      <span id="who" class="muted" hidden></span>
+      <button id="signOut" type="button" hidden>Sign out</button>
+      <button id="theme" type="button" aria-label="Switch colour theme">Theme</button>
+    </div>
+  </header>
+
+  <!-- signed out -->
+  <div id="signedOut" class="stack">
+    <div class="cols">
+      <section class="panel" aria-labelledby="h-in">
+        <h2 id="h-in">Sign in</h2>
+        <form id="loginForm" class="tight" novalidate>
+          <label>Email <input id="liEmail" type="email" autocomplete="email" required></label>
+          <label>Password <input id="liPassword" type="password" autocomplete="current-password" required></label>
+          <div class="row"><button class="primary" type="submit">Sign in</button></div>
+          <div id="liMsg" class="msg" role="status"></div>
+        </form>
+      </section>
+      <section class="panel" aria-labelledby="h-up">
+        <h2 id="h-up">Create an account</h2>
+        <form id="registerForm" class="tight" novalidate>
+          <div class="grid2">
+            <label>First name <input id="rgFirst" autocomplete="given-name" required></label>
+            <label>Last name <input id="rgLast" autocomplete="family-name"></label>
+            <label>Email <input id="rgEmail" type="email" autocomplete="email" required></label>
+            <label>Phone (optional) <input id="rgPhone" autocomplete="tel" placeholder="+919876543210"></label>
+          </div>
+          <label>Password <input id="rgPassword" type="password" autocomplete="new-password" required></label>
+          <p class="note">At least 12 characters, with at least three of: lower case, upper case, a digit, a symbol.</p>
+          <div class="row"><button class="primary" type="submit">Create account</button></div>
+          <div id="rgMsg" class="msg" role="status"></div>
+        </form>
+      </section>
+    </div>
+    <section class="panel" aria-labelledby="h-help">
+      <h2 id="h-help">Trouble signing in?</h2>
+      <p class="note" style="margin-top:0">No email service is connected yet. The tokens for verifying an email or resetting a password are written to the user service log (the dev setting), so ask whoever runs the service for the token.</p>
+      <details style="margin-top:10px"><summary>Forgot my password</summary>
+        <form id="resetRequestForm" class="tight" style="margin-top:10px" novalidate>
+          <label>Email <input id="rsEmail" type="email" autocomplete="email"></label>
+          <div class="row"><button type="submit">Request a reset</button></div>
+          <div id="rsMsg" class="msg" role="status"></div>
+        </form>
+        <form id="resetForm" class="tight" style="margin-top:10px" novalidate>
+          <label>Reset token <input id="rtToken" class="mono" autocomplete="off"></label>
+          <label>New password <input id="rtPassword" type="password" autocomplete="new-password"></label>
+          <div class="row"><button type="submit">Set new password</button></div>
+          <div id="rtMsg" class="msg" role="status"></div>
+        </form>
+      </details>
+    </section>
+  </div>
+
+  <!-- signed in -->
+  <div id="signedIn" class="stack" hidden>
+    <section class="panel hero">
+      <div id="avatar" class="avatar" aria-hidden="true"></div>
+      <div style="flex:1;min-width:200px">
+        <h3 id="heroName"></h3>
+        <div class="muted" id="heroEmail"></div>
+        <div class="row" id="heroChips" style="margin-top:6px"></div>
+      </div>
+      <div class="muted small mono" id="heroId"></div>
+    </section>
+    <div class="seg" role="tablist" aria-label="Account sections" id="tabs"></div>
+
+    <section class="panel" id="tab-profile" role="tabpanel" aria-labelledby="h-prof">
+      <h2 id="h-prof">Profile</h2>
+      <form id="profileForm" class="tight" novalidate>
+        <div class="grid2">
+          <label>First name <input id="pfFirst" autocomplete="given-name"></label>
+          <label>Last name <input id="pfLast" autocomplete="family-name"></label>
+          <label>Phone <input id="pfPhone" autocomplete="tel" placeholder="+919876543210"></label>
+          <label>Language <input id="pfLocale" placeholder="en-IN"></label>
+        </div>
+        <div class="row"><button class="primary" type="submit">Save changes</button></div>
+        <div id="pfMsg" class="msg" role="status"></div>
+      </form>
+      <div id="verifyBox" class="notice warn tight" style="margin-top:14px" hidden>
+        <div>Your email is not verified yet.</div>
+        <div class="row"><button id="resendBtn" type="button">Resend verification</button></div>
+        <form id="verifyForm" class="row" novalidate>
+          <input id="vfToken" class="mono" placeholder="verification token" style="max-width:340px" autocomplete="off">
+          <button type="submit">Verify</button>
+        </form>
+        <div id="vfMsg" class="msg" role="status"></div>
+      </div>
+      <div class="tight" style="margin-top:18px">
+        <h3>Delete account</h3>
+        <p class="note" style="margin:0">This removes your sign-in and personal data. It cannot be undone.</p>
+        <div class="row">
+          <button id="delStart" class="danger" type="button">Delete my account</button>
+          <span id="delConfirm" class="row" hidden>
+            <input id="delType" placeholder="type DELETE to confirm" style="max-width:220px" autocomplete="off">
+            <button id="delGo" class="danger" type="button">Delete for good</button>
+            <button id="delCancel" type="button">Keep my account</button>
+          </span>
+        </div>
+        <div id="delMsg" class="msg" role="status"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="tab-addresses" role="tabpanel" aria-labelledby="h-addr" hidden>
+      <h2 id="h-addr">Delivery addresses</h2>
+      <div id="addrList" class="list"></div>
+      <h3 style="margin-top:16px" id="addrFormTitle">Add an address</h3>
+      <form id="addrForm" class="tight" novalidate>
+        <div class="grid2">
+          <label>Label <input id="adLabel" placeholder="Home"></label>
+          <label>Address line 1 <input id="adLine1" autocomplete="address-line1"></label>
+          <label>Address line 2 <input id="adLine2" autocomplete="address-line2"></label>
+          <label>City <input id="adCity" autocomplete="address-level2"></label>
+          <label>State <input id="adState" autocomplete="address-level1"></label>
+          <label>PIN code <input id="adZip" autocomplete="postal-code"></label>
+          <label>Country code <input id="adCountry" value="IN" maxlength="2"></label>
+        </div>
+        <label class="check"><input type="checkbox" id="adDefault"> Make this my default address</label>
+        <div class="row"><button class="primary" type="submit" id="adSave">Add address</button><button type="button" id="adCancel" hidden>Cancel editing</button></div>
+        <div id="adMsg" class="msg" role="status"></div>
+      </form>
+    </section>
+
+    <section class="panel" id="tab-payments" role="tabpanel" aria-labelledby="h-pay" hidden>
+      <h2 id="h-pay">Saved payment methods</h2>
+      <p class="note" style="margin-top:0">Only the payment provider's token is stored here, never a card number.</p>
+      <div id="pmList" class="list" style="margin-top:10px"></div>
+      <h3 style="margin-top:16px">Add a payment method</h3>
+      <form id="pmForm" class="tight" novalidate>
+        <div class="grid2">
+          <label>Provider <select id="pmProvider"><option>RAZORPAY</option><option>STRIPE</option></select></label>
+          <label>Provider token <input id="pmToken" class="mono" placeholder="pm_..." autocomplete="off"></label>
+          <label>Card brand <input id="pmBrand" placeholder="Visa"></label>
+          <label>Last 4 digits <input id="pmLast4" maxlength="4" inputmode="numeric"></label>
+          <label>Expiry month <input id="pmMonth" type="number" min="1" max="12"></label>
+          <label>Expiry year <input id="pmYear" type="number" min="2024" max="2100"></label>
+        </div>
+        <label class="check"><input type="checkbox" id="pmDefault"> Make this my default</label>
+        <div class="row"><button class="primary" type="submit">Save payment method</button></div>
+        <div id="pmMsg" class="msg" role="status"></div>
+      </form>
+    </section>
+
+    <section class="panel" id="tab-privacy" role="tabpanel" aria-labelledby="h-priv" hidden>
+      <h2 id="h-priv">Privacy and consent</h2>
+      <div id="consentList" class="list"></div>
+      <div id="csMsg" class="msg" role="status"></div>
+      <details style="margin-top:12px"><summary>History of your choices</summary><div id="consentHistory" class="list" style="margin-top:8px"></div></details>
+    </section>
+
+    <section class="panel" id="tab-security" role="tabpanel" aria-labelledby="h-sec" hidden>
+      <h2 id="h-sec">Security</h2>
+      <form id="pwForm" class="tight" novalidate>
+        <div class="grid2">
+          <label>Current password <input id="pwCurrent" type="password" autocomplete="current-password"></label>
+          <label>New password <input id="pwNew" type="password" autocomplete="new-password"></label>
+        </div>
+        <div class="row"><button class="primary" type="submit">Change password</button></div>
+        <div id="pwMsg" class="msg" role="status"></div>
+      </form>
+      <div class="tight" style="margin-top:18px">
+        <h3>Sessions</h3>
+        <p class="note" style="margin:0" id="sessionInfo"></p>
+        <div class="row"><button id="outHere" type="button">Sign out of this browser</button><button id="outAll" class="danger" type="button">Sign out of every device</button></div>
+        <div id="seMsg" class="msg" role="status"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="tab-admin" role="tabpanel" aria-labelledby="h-adm" hidden>
+      <h2 id="h-adm">Administration</h2>
+      <div class="row" style="margin-bottom:10px">
+        <label style="min-width:180px">Show <select id="amStatus"><option value="">All accounts</option><option>ACTIVE</option><option>PENDING_VERIFICATION</option><option>SUSPENDED</option></select></label>
+        <button id="amRefresh" type="button" style="align-self:end">Refresh</button>
+      </div>
+      <div id="amList" class="list"></div>
+      <div class="row between" style="margin-top:10px"><button id="amPrev" type="button">Previous</button><span id="amPage" class="muted"></span><button id="amNext" type="button">Next</button></div>
+      <div id="amMsg" class="msg" role="status"></div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="h-log">
+    <h2 id="h-log">Requests</h2>
+    <div class="row" style="margin-bottom:8px"><button id="clearLog" type="button">Clear</button></div>
+    <div id="log" class="log"><div class="muted">Calls made by this page appear here. Passwords and tokens are hidden.</div></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const ORDER_CONSOLE = "https://order-service-nf43.onrender.com/console.html";
+  const SUPPLIER_CONSOLE = "https://supplier-service-tha0.onrender.com/supplier.html";
+  const KEY = "bazaar.user.session";
+  const BASE = (function () { try { return localStorage.getItem("uc.base") || ""; } catch (e) { return ""; } })();
+  $("orderLink").href = ORDER_CONSOLE; $("supplierLink").href = SUPPLIER_CONSOLE;
+
+  const clock = () => new Date().toLocaleTimeString([], { hour12: false });
+  function el(tag, attrs, ...kids) {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) { if (v === null || v === undefined || v === false) continue; if (k === "class") n.className = v; else if (k === "text") n.textContent = v; else n.setAttribute(k, v === true ? "" : v); }
+    kids.flat(2).forEach((kid) => { if (kid !== null && kid !== undefined && kid !== false) n.append(kid); });
+    return n;
+  }
+  const say = (id, text, kind) => { const m = $(id); m.textContent = text || ""; m.className = "msg" + (kind ? " " + kind : ""); };
+  const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => { const r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3 | 8)).toString(16); }));
+
+  $("theme").addEventListener("click", () => {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+  });
+
+  // ----- session and API
+  const Session = {
+    get() { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } },
+    set(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* storage blocked */ } },
+    clear() { try { localStorage.removeItem(KEY); } catch (e) { /* storage blocked */ } }
+  };
+  function claims(token) { try { const p = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"); return JSON.parse(decodeURIComponent(escape(atob(p)))); } catch (e) { return {}; } }
+  const SECRET_FIELDS = ["password", "currentPassword", "newPassword", "refreshToken", "accessToken", "token", "providerToken"];
+  function redact(value) {
+    if (Array.isArray(value)) return value.map(redact);
+    if (value && typeof value === "object") { const o = {}; Object.keys(value).forEach((k) => { o[k] = SECRET_FIELDS.indexOf(k) > -1 ? "••••" : redact(value[k]); }); return o; }
+    return value;
+  }
+  function log(method, path, status, ms, payload) {
+    const box = $("log");
+    if (box.firstChild && box.firstChild.classList.contains("muted")) box.textContent = "";
+    const sum = el("summary", { text: clock() + "  " + method + " " + path + "  → " + status + "  (" + ms + " ms)" });
+    sum.style.color = status >= 200 && status < 300 ? "var(--ok)" : "var(--bad)";
+    box.prepend(el("div", {}, el("details", {}, sum, el("pre", { text: typeof payload === "string" ? payload : JSON.stringify(redact(payload), null, 2) }))));
+  }
+  $("clearLog").addEventListener("click", () => { $("log").textContent = ""; });
+
+  async function send(method, path, body, headers) {
+    const t0 = performance.now();
+    const h = Object.assign({}, headers || {});
+    if (body !== undefined) h["Content-Type"] = "application/json";
+    let res, text;
+    try { res = await fetch(BASE + path, { method, headers: h, body: body !== undefined ? JSON.stringify(body) : undefined }); text = await res.text(); }
+    catch (e) { log(method, path, 0, Math.round(performance.now() - t0), "Network error: " + e.message); throw new Error("Cannot reach the user service. Check your connection and try again."); }
+    let data = null; try { data = text ? JSON.parse(text) : null; } catch (e) { /* not json */ }
+    log(method, path, res.status, Math.round(performance.now() - t0), data !== null ? data : (text || "(empty)"));
+    if (!res.ok) {
+      const b = (data && data.error) || {};
+      let detail = "";
+      if (b.details && typeof b.details === "object") detail = " (" + Object.keys(b.details).map((k) => k + ": " + b.details[k]).join("; ") + ")";
+      const err = new Error((b.message || res.statusText || "Request failed") + detail); err.status = res.status; err.code = b.code || null; throw err;
+    }
+    return data;
+  }
+  function tokenFields(t) { const c = claims(t.accessToken); return { accessToken: t.accessToken, refreshToken: t.refreshToken, userId: c.sub, exp: Date.now() + (t.expiresIn || 900) * 1000 }; }
+  async function bearer() {
+    let s = Session.get();
+    if (!s) { const e = new Error("Please sign in."); e.status = 401; throw e; }
+    if (s.exp - Date.now() < 30000) {
+      try { s = Object.assign({}, s, tokenFields(await send("POST", "/api/v1/users/refresh", { refreshToken: s.refreshToken }))); Session.set(s); }
+      catch (e) { Session.clear(); render(); const gone = new Error("Your session ended. Please sign in again."); gone.status = 401; throw gone; }
+    }
+    return s.accessToken;
+  }
+  async function api(method, path, body, headers) { return send(method, path, body, Object.assign({ Authorization: "Bearer " + await bearer() }, headers || {})); }
+
+  // ----- sign in, sign up, help
+  async function signIn(email, password) {
+    const t = await send("POST", "/api/v1/users/login", { email, password });
+    Session.set(tokenFields(t));
+    await load();
+  }
+  $("loginForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault(); const b = ev.target.querySelector("button"); b.disabled = true; say("liMsg", "Signing in…");
+    try { await signIn($("liEmail").value.trim(), $("liPassword").value); $("liPassword").value = ""; say("liMsg", ""); } catch (e) { say("liMsg", e.message, "bad"); } finally { b.disabled = false; }
+  });
+  $("registerForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault(); const b = ev.target.querySelector("button"); b.disabled = true; say("rgMsg", "Creating your account…");
+    const body = { email: $("rgEmail").value.trim(), password: $("rgPassword").value, firstName: $("rgFirst").value.trim(), lastName: $("rgLast").value.trim() || null, phone: $("rgPhone").value.trim() || null, locale: "en-IN" };
+    try { await send("POST", "/api/v1/users/register", body, { "Idempotency-Key": uuid() }); await signIn(body.email, body.password); $("rgPassword").value = ""; say("rgMsg", ""); }
+    catch (e) { say("rgMsg", e.message, "bad"); } finally { b.disabled = false; }
+  });
+  $("resetRequestForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault(); say("rsMsg", "Sending…");
+    try { await send("POST", "/api/v1/users/password/reset-request", { email: $("rsEmail").value.trim() }); say("rsMsg", "If that email has an account, a reset token was issued.", "ok"); } catch (e) { say("rsMsg", e.message, "bad"); }
+  });
+  $("resetForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault(); say("rtMsg", "Saving…");
+    try { await send("POST", "/api/v1/users/password/reset", { token: $("rtToken").value.trim(), newPassword: $("rtPassword").value }); $("rtPassword").value = ""; say("rtMsg", "Password changed. You can sign in now.", "ok"); } catch (e) { say("rtMsg", e.message, "bad"); }
+  });
+
+  // ----- view switching
+  let me = null;
+  const TABS = [["profile", "Profile"], ["addresses", "Addresses"], ["payments", "Payment methods"], ["privacy", "Privacy"], ["security", "Security"], ["admin", "Admin"]];
+  let tab = "profile";
+  function drawTabs() {
+    const isAdmin = me && (me.roles || []).some((r) => r === "ADMIN" || r === "OPS");
+    const box = $("tabs"); box.textContent = "";
+    TABS.filter(([k]) => k !== "admin" || isAdmin).forEach(([k, label]) => {
+      const b = el("button", { type: "button", role: "tab", "aria-selected": String(k === tab), text: label });
+      b.addEventListener("click", () => show(k));
+      box.append(b);
+    });
+  }
+  function show(k) {
+    tab = k;
+    TABS.forEach(([key]) => { $("tab-" + key).hidden = key !== k; });
+    drawTabs();
+    if (k === "addresses") loadAddresses();
+    if (k === "payments") loadPayments();
+    if (k === "privacy") loadConsents();
+    if (k === "security") { const s = Session.get(); $("sessionInfo").textContent = s ? "Signed in as " + (me ? me.email : "") + ". Your access refreshes by itself; this browser's session lasts until you sign out." : ""; }
+    if (k === "admin") loadUsers();
+  }
+  function hue(text) { let h = 0; for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) % 360; return h; }
+  function render() {
+    const s = Session.get();
+    $("signedOut").hidden = !!s; $("signedIn").hidden = !s;
+    $("signOut").hidden = !s; $("who").hidden = !s;
+    if (!s) { me = null; $("who").textContent = ""; return; }
+    if (me) {
+      const name = [me.firstName, me.lastName].filter(Boolean).join(" ") || me.email;
+      $("who").textContent = name; $("heroName").textContent = name; $("heroEmail").textContent = me.email; $("heroId").textContent = me.id;
+      const av = $("avatar"); av.textContent = (me.firstName || me.email || "?")[0].toUpperCase(); av.style.background = "linear-gradient(135deg, hsl(" + hue(me.email) + " 40% 36%), hsl(" + ((hue(me.email) + 40) % 360) + " 44% 48%))";
+      const chips = $("heroChips"); chips.textContent = "";
+      chips.append(el("span", { class: "chip " + (me.status === "ACTIVE" ? "ok" : me.status === "SUSPENDED" ? "bad" : "warn"), text: me.status.replace(/_/g, " ").toLowerCase() }));
+      chips.append(el("span", { class: "chip " + (me.emailVerified ? "ok" : "warn"), text: me.emailVerified ? "email verified" : "email not verified" }));
+      (me.roles || []).forEach((r) => chips.append(el("span", { class: "chip", text: r.toLowerCase() })));
+      $("pfFirst").value = me.firstName || ""; $("pfLast").value = me.lastName || ""; $("pfPhone").value = me.phone || ""; $("pfLocale").value = me.locale || "";
+      $("verifyBox").hidden = me.emailVerified;
+      drawTabs();
+    }
+  }
+  async function load() {
+    try { me = await api("GET", "/api/v1/users/me"); render(); show(tab); }
+    catch (e) { if (e.status === 401) { Session.clear(); } render(); }
+  }
+  $("signOut").addEventListener("click", async () => { await logout(false); });
+  async function logout(all) {
+    const s = Session.get();
+    try { await api("POST", "/api/v1/users/logout", { refreshToken: s && s.refreshToken, allSessions: all }); } catch (e) { /* signing out locally anyway */ }
+    Session.clear(); me = null; render(); tab = "profile";
+  }
+  $("outHere").addEventListener("click", () => logout(false));
+  $("outAll").addEventListener("click", () => logout(true));
+
+  // ----- profile
+  $("profileForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault(); say("pfMsg", "Saving…");
+    try {
+      me = await api("PATCH", "/api/v1/users/me", { firstName: $("pfFirst").value.trim(), lastName: $("pfLast").value.trim() || null, phone: $("pfPhone").value.trim() || null, locale: $("pfLocale").value.trim() || null, version: me.version });
+      render(); say("pfMsg", "Saved.", "ok");
+    } catch (e) { say("pfMsg", e.message, "bad"); }
+  });
+  $("resendBtn").addEventListener("click", async () => { try { await api("POST", "/api/v1/users/verify-email/resend"); say("vfMsg", "A new verification token was issued.", "ok"); } catch (e) { say("vfMsg", e.message, "bad"); } });
+  $("verifyForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    try { await send("POST", "/api/v1/users/verify-email", { token: $("vfToken").value.trim() }); say("vfMsg", "Email verified.", "ok"); await load(); } catch (e) { say("vfMsg", e.message, "bad"); }
+  });
+  $("delStart").addEventListener("click", () => { $("delStart").hidden = true; $("delConfirm").hidden = false; $("delType").focus(); });
+  $("delCancel").addEventListener("click", () => { $("delConfirm").hidden = true; $("delStart").hidden = false; $("delType").value = ""; say("delMsg", ""); });
+  $("delGo").addEventListener("click", async () => {
+    if ($("delType").value.trim() !== "DELETE") { say("delMsg", "Type DELETE to confirm.", "bad"); return; }
+    try { await api("DELETE", "/api/v1/users/me"); Session.clear(); me = null; render(); } catch (e) { say("delMsg", e.message, "bad"); }
+  });
+
+  // ----- addresses
+  let editing = null;
+  function resetAddrForm() { editing = null; ["adLabel", "adLine1", "adLine2", "adCity", "adState", "adZip"].forEach((i) => { $(i).value = ""; }); $("adCountry").value = "IN"; $("adDefault").checked = false; $("adSave").textContent = "Add address"; $("adCancel").hidden = true; $("addrFormTitle").textContent = "Add an address"; }
+  async function loadAddresses() {
+    const box = $("addrList"); box.textContent = "";
+    try {
+      const list = await api("GET", "/api/v1/users/me/addresses");
+      if (!list.length) box.append(el("div", { class: "muted", text: "No saved addresses yet." }));
+      list.forEach((a) => {
+        const edit = el("button", { type: "button", text: "Edit" });
+        edit.addEventListener("click", () => { editing = a; $("adLabel").value = a.label || ""; $("adLine1").value = a.line1; $("adLine2").value = a.line2 || ""; $("adCity").value = a.city; $("adState").value = a.state; $("adZip").value = a.postalCode; $("adCountry").value = a.country; $("adDefault").checked = a.isDefault; $("adSave").textContent = "Save address"; $("adCancel").hidden = false; $("addrFormTitle").textContent = "Edit address"; });
+        const del = el("button", { type: "button", class: "danger", text: "Delete" });
+        del.addEventListener("click", async () => { try { await api("DELETE", "/api/v1/users/me/addresses/" + a.id); say("adMsg", "Address removed.", "ok"); loadAddresses(); } catch (e) { say("adMsg", e.message, "bad"); } });
+        const makeDefault = a.isDefault ? null : el("button", { type: "button", text: "Make default" });
+        if (makeDefault) makeDefault.addEventListener("click", async () => { try { await api("PATCH", "/api/v1/users/me/addresses/" + a.id, { isDefault: true, version: a.version }); loadAddresses(); } catch (e) { say("adMsg", e.message, "bad"); } });
+        box.append(el("div", { class: "item" }, el("div", {}, el("strong", { text: a.label || "Address" }), a.isDefault ? el("span", { class: "chip ok", text: " default" }) : null,
+          el("div", { class: "muted", text: [a.line1, a.line2, a.city, a.state, a.postalCode, a.country].filter(Boolean).join(", ") })), el("div", { class: "row" }, makeDefault, edit, del)));
+      });
+    } catch (e) { box.append(el("div", { class: "notice warn", text: e.message })); }
+  }
+  $("addrForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault(); say("adMsg", "Saving…");
+    const body = { label: $("adLabel").value.trim() || null, line1: $("adLine1").value.trim(), line2: $("adLine2").value.trim() || null, city: $("adCity").value.trim(), state: $("adState").value.trim(), postalCode: $("adZip").value.trim(), country: $("adCountry").value.trim().toUpperCase(), isDefault: $("adDefault").checked };
+    try {
+      if (editing) await api("PATCH", "/api/v1/users/me/addresses/" + editing.id, Object.assign(body, { version: editing.version }));
+      else await api("POST", "/api/v1/users/me/addresses", body, { "Idempotency-Key": uuid() });
+      say("adMsg", "Saved.", "ok"); resetAddrForm(); loadAddresses();
+    } catch (e) { say("adMsg", e.message, "bad"); }
+  });
+  $("adCancel").addEventListener("click", () => { resetAddrForm(); say("adMsg", ""); });
+
+  // ----- payment methods
+  async function loadPayments() {
+    const box = $("pmList"); box.textContent = "";
+    try {
+      const list = await api("GET", "/api/v1/users/me/payment-methods");
+      if (!list.length) box.append(el("div", { class: "muted", text: "No saved payment methods yet." }));
+      list.forEach((p) => {
+        const mk = p.isDefault ? null : el("button", { type: "button", text: "Make default" });
+        if (mk) mk.addEventListener("click", async () => { try { await api("POST", "/api/v1/users/me/payment-methods/" + p.id + "/default"); loadPayments(); } catch (e) { say("pmMsg", e.message, "bad"); } });
+        const rm = el("button", { type: "button", class: "danger", text: "Remove" });
+        rm.addEventListener("click", async () => { try { await api("DELETE", "/api/v1/users/me/payment-methods/" + p.id); say("pmMsg", "Removed.", "ok"); loadPayments(); } catch (e) { say("pmMsg", e.message, "bad"); } });
+        box.append(el("div", { class: "item" }, el("div", {}, el("strong", { text: (p.brand || "Card") + (p.last4 ? " •••• " + p.last4 : "") }), p.isDefault ? el("span", { class: "chip ok", text: " default" }) : null,
+          el("div", { class: "muted", text: p.provider + (p.expMonth ? " · expires " + String(p.expMonth).padStart(2, "0") + "/" + p.expYear : "") })), el("div", { class: "row" }, mk, rm)));
+      });
+    } catch (e) { box.append(el("div", { class: "notice warn", text: e.message })); }
+  }
+  $("pmForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault(); say("pmMsg", "Saving…");
+    const body = { provider: $("pmProvider").value, providerToken: $("pmToken").value.trim(), brand: $("pmBrand").value.trim() || null, last4: $("pmLast4").value.trim() || null, expMonth: $("pmMonth").value ? Number($("pmMonth").value) : null, expYear: $("pmYear").value ? Number($("pmYear").value) : null, isDefault: $("pmDefault").checked };
+    try { await api("POST", "/api/v1/users/me/payment-methods", body, { "Idempotency-Key": uuid() }); say("pmMsg", "Saved.", "ok"); ["pmToken", "pmBrand", "pmLast4", "pmMonth", "pmYear"].forEach((i) => { $(i).value = ""; }); $("pmDefault").checked = false; loadPayments(); }
+    catch (e) { say("pmMsg", e.message, "bad"); }
+  });
+
+  // ----- consent
+  const CONSENTS = [["MARKETING_EMAILS", "Marketing emails", "Offers and news by email."], ["PERSONALISATION", "Personalised recommendations", "Use my activity to suggest products."], ["ANALYTICS", "Usage analytics", "Help improve the shop by sharing anonymous usage."]];
+  async function loadConsents() {
+    const box = $("consentList"); box.textContent = "";
+    let current = {};
+    try { (await api("GET", "/api/v1/users/me/consents")).forEach((c) => { current[c.kind] = c.granted; }); } catch (e) { box.append(el("div", { class: "notice warn", text: e.message })); return; }
+    CONSENTS.forEach(([kind, title, hint]) => {
+      const input = el("input", { type: "checkbox", "aria-label": title }); input.checked = !!current[kind];
+      input.addEventListener("change", async () => { try { await api("POST", "/api/v1/users/me/consents", { kind, granted: input.checked }); say("csMsg", title + (input.checked ? " allowed." : " turned off."), "ok"); loadHistory(); } catch (e) { input.checked = !input.checked; say("csMsg", e.message, "bad"); } });
+      box.append(el("label", { class: "switch" }, el("span", {}, el("strong", { text: title }), el("div", { class: "muted", text: hint })), input));
+    });
+    loadHistory();
+  }
+  async function loadHistory() {
+    const box = $("consentHistory"); box.textContent = "";
+    try { const h = await api("GET", "/api/v1/users/me/consents/history"); if (!h.length) box.append(el("div", { class: "muted", text: "No decisions recorded yet." })); h.forEach((c) => box.append(el("div", { class: "item" }, el("span", { text: c.kind.replace(/_/g, " ").toLowerCase() }), el("span", { class: "chip " + (c.granted ? "ok" : ""), text: (c.granted ? "allowed" : "turned off") + " · " + new Date(c.recordedAt).toLocaleString() })))); } catch (e) { /* history is optional */ }
+  }
+
+  // ----- security
+  $("pwForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault(); say("pwMsg", "Changing…");
+    try { await api("POST", "/api/v1/users/me/password", { currentPassword: $("pwCurrent").value, newPassword: $("pwNew").value }); $("pwCurrent").value = ""; $("pwNew").value = ""; Session.clear(); me = null; tab = "profile"; render(); say("liMsg", "Password changed. Every session was signed out, so sign in with the new password.", "ok"); }
+    catch (e) { say("pwMsg", e.message, "bad"); }
+  });
+
+  // ----- admin
+  let amPage = 0;
+  const ROLES = ["CUSTOMER", "SUPPLIER", "OPS", "ADMIN"];
+  async function loadUsers() {
+    const box = $("amList"); box.textContent = ""; say("amMsg", "");
+    const q = "?size=10&page=" + amPage + ($("amStatus").value ? "&status=" + $("amStatus").value : "");
+    try {
+      const page = await api("GET", "/api/v1/admin/users" + q);
+      $("amPage").textContent = "Page " + (page.page + 1) + " of " + Math.max(page.totalPages, 1) + " · " + page.totalItems + " accounts";
+      $("amPrev").disabled = page.page <= 0; $("amNext").disabled = page.page + 1 >= page.totalPages;
+      page.items.forEach((u) => {
+        const isAdmin = (me.roles || []).includes("ADMIN");
+        const toggle = el("button", { type: "button", class: u.status === "SUSPENDED" ? "" : "danger", text: u.status === "SUSPENDED" ? "Reactivate" : "Suspend" });
+        toggle.addEventListener("click", async () => { try { await api("POST", "/api/v1/admin/users/" + u.id + (u.status === "SUSPENDED" ? "/reactivate" : "/suspend")); loadUsers(); } catch (e) { say("amMsg", e.message, "bad"); } });
+        const roleBoxes = ROLES.map((r) => { const cb = el("input", { type: "checkbox", "aria-label": r + " for " + u.email }); cb.checked = (u.roles || []).includes(r); cb.disabled = !isAdmin; return [r, cb]; });
+        const save = el("button", { type: "button", text: "Save roles", disabled: !isAdmin });
+        save.addEventListener("click", async () => { try { await api("PUT", "/api/v1/admin/users/" + u.id + "/roles", { roles: roleBoxes.filter(([, cb]) => cb.checked).map(([r]) => r) }); say("amMsg", "Roles saved for " + u.email + ".", "ok"); loadUsers(); } catch (e) { say("amMsg", e.message, "bad"); } });
+        box.append(el("div", { class: "item" },
+          el("div", {}, el("strong", { text: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email }), el("div", { class: "muted", text: u.email }), el("span", { class: "chip " + (u.status === "ACTIVE" ? "ok" : u.status === "SUSPENDED" ? "bad" : "warn"), text: u.status.replace(/_/g, " ").toLowerCase() })),
+          el("div", { class: "row" }, roleBoxes.map(([r, cb]) => el("label", { class: "check" }, cb, r.toLowerCase())), save, toggle)));
+      });
+      if (!page.items.length) box.append(el("div", { class: "muted", text: "No accounts match." }));
+    } catch (e) { box.append(el("div", { class: "notice warn", text: e.message })); }
+  }
+  $("amRefresh").addEventListener("click", () => { amPage = 0; loadUsers(); });
+  $("amStatus").addEventListener("change", () => { amPage = 0; loadUsers(); });
+  $("amPrev").addEventListener("click", () => { amPage = Math.max(0, amPage - 1); loadUsers(); });
+  $("amNext").addEventListener("click", () => { amPage += 1; loadUsers(); });
+
+  // ----- start
+  render();
+  if (Session.get()) load();
+})();
+</script>
+<script>
+/* motion helpers: staggered reveal, condensing title bar, and a soft flash when a status message changes */
+(function () {
+  "use strict";
+  var wrap = document.querySelector(".wrap");
+  if (wrap) Array.prototype.forEach.call(wrap.children, function (child, i) { child.style.setProperty("--i", i); });
+  var bar = document.querySelector("header");
+  function onScroll() { if (bar) bar.classList.toggle("condensed", window.scrollY > 24); }
+  window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
+  new MutationObserver(function (changes) {
+    changes.forEach(function (c) {
+      var node = c.target.nodeType === 3 ? c.target.parentElement : c.target;
+      var msg = node && node.closest && node.closest("[role=status], .msg");
+      if (msg && msg.textContent) { msg.classList.remove("flash"); void msg.offsetWidth; msg.classList.add("flash"); }
+    });
+  }).observe(document.body, { childList: true, characterData: true, subtree: true });
+})();
+</script>
+</body>
+</html>

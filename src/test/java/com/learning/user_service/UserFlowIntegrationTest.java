@@ -2,11 +2,9 @@ package com.learning.user_service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -15,9 +13,9 @@ import org.springframework.test.web.servlet.MvcResult;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,30 +28,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * End-to-end flow against the local {@code users_test} Postgres DB and Redis.
- * Skipped when either is not running.
+ * End-to-end flow against H2 (Oracle mode, built from the real migrations). Refresh tokens live in the database, so
+ * no Redis is needed; the rate limiter and profile cache simply fail open.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@EnabledIf("com.learning.user_service.support.LocalInfrastructure#available")
 class UserFlowIntegrationTest {
 
     private static final String PASSWORD = "Str0ng-Passw0rd!";
 
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
-    @Autowired StringRedisTemplate redis;
     @Autowired JsonMapper jsonMapper;
 
     private String email;
 
     @BeforeEach
     void setUp() {
-        Set<String> keys = redis.keys("ratelimit:*");
-        if (keys != null && !keys.isEmpty()) {
-            redis.delete(keys);
-        }
         email = "it-" + UUID.randomUUID() + "@example.com";
     }
 
@@ -82,8 +74,7 @@ class UserFlowIntegrationTest {
                 .isEqualTo(1);
 
         // Verify email with the token carried by the outbox event.
-        String token = jdbc.queryForObject("select payload::jsonb -> 'data' ->> 'verificationToken' from user_outbox "
-                + "where aggregate_id = ?::uuid and event_type = 'EMAIL_VERIFICATION_REQUESTED'", String.class, userId);
+        String token = outboxData(userId, "EMAIL_VERIFICATION_REQUESTED").get("verificationToken").asString();
         mvc.perform(post("/api/v1/users/verify-email").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\":\"" + token + "\"}"))
                 .andExpect(status().isNoContent());
@@ -106,10 +97,10 @@ class UserFlowIntegrationTest {
                 .andExpect(jsonPath("$.lastName").value("Verma"));
 
         // Outbox rows are published by the poller.
-        waitUntil(() -> jdbc.queryForObject("select count(*) from user_outbox where aggregate_id = ?::uuid "
-                + "and status <> 'SENT'", Integer.class, userId) == 0);
-        assertThat(jdbc.queryForList("select event_type from user_outbox where aggregate_id = ?::uuid",
-                String.class, userId)).contains("USER_REGISTERED", "EMAIL_VERIFICATION_REQUESTED", "USER_UPDATED");
+        waitUntil(() -> jdbc.queryForObject("select count(*) from user_outbox where aggregate_id = ? "
+                + "and status <> 'SENT'", Integer.class, (Object) rawUuid(userId)) == 0);
+        assertThat(jdbc.queryForList("select event_type from user_outbox where aggregate_id = ?",
+                String.class, (Object) rawUuid(userId))).contains("USER_REGISTERED", "EMAIL_VERIFICATION_REQUESTED", "USER_UPDATED");
     }
 
     @Test
@@ -171,9 +162,11 @@ class UserFlowIntegrationTest {
         mvc.perform(post("/api/v1/users/password/reset-request").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"" + email + "\"}"))
                 .andExpect(status().isAccepted());
-        String token = jdbc.queryForObject("select payload::jsonb -> 'data' ->> 'resetToken' from user_outbox "
-                + "where payload::jsonb -> 'data' ->> 'email' = ? and event_type = 'PASSWORD_RESET_REQUESTED'",
-                String.class, email);
+        String token = jdbc.queryForList("select payload from user_outbox where event_type = 'PASSWORD_RESET_REQUESTED'",
+                        String.class).stream()
+                .map(payload -> jsonMapper.readTree(payload).get("data"))
+                .filter(data -> email.equals(data.get("email").asString()))
+                .findFirst().orElseThrow().get("resetToken").asString();
 
         mvc.perform(post("/api/v1/users/password/reset").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\":\"" + token + "\",\"newPassword\":\"N3w-Passw0rd!!\"}"))
@@ -203,7 +196,8 @@ class UserFlowIntegrationTest {
     @Test
     void internalLookupNeedsServiceToken() throws Exception {
         registerAndLogin();
-        String userId = jdbc.queryForObject("select id::text from users where email = ?", String.class, email);
+        byte[] id = jdbc.queryForObject("select id from users where email = ?", byte[].class, email);
+        String userId = uuidOf(id).toString();
         mvc.perform(get("/api/v1/internal/users/" + userId).header("X-Internal-Token", "change-me-internal-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(email));
@@ -231,6 +225,24 @@ class UserFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
                 .andReturn());
+    }
+
+    /** The {@code data} object of the newest outbox event of this type for the user. */
+    private JsonNode outboxData(String userId, String eventType) {
+        String payload = jdbc.queryForObject("select payload from user_outbox where aggregate_id = ? "
+                + "and event_type = ?", String.class, rawUuid(userId), eventType);
+        return jsonMapper.readTree(payload).get("data");
+    }
+
+    /** UUID columns are RAW(16), so ids are bound as their 16 bytes. */
+    private static byte[] rawUuid(String uuid) {
+        UUID id = UUID.fromString(uuid);
+        return ByteBuffer.allocate(16).putLong(id.getMostSignificantBits()).putLong(id.getLeastSignificantBits()).array();
+    }
+
+    private static UUID uuidOf(byte[] raw) {
+        ByteBuffer buffer = ByteBuffer.wrap(raw);
+        return new UUID(buffer.getLong(), buffer.getLong());
     }
 
     private JsonNode json(MvcResult result) throws Exception {

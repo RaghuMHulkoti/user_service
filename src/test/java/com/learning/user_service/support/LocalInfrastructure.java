@@ -4,14 +4,14 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-/** Integration tests need local Postgres (users_test DB) and Redis. Skip them when either is down. */
+/** Integration tests need a local Redis (the database is in-memory H2). Skip them when it is down. */
 public final class LocalInfrastructure {
 
     private LocalInfrastructure() {
     }
 
     public static boolean available() {
-        return reachable("localhost", 5432) && reachable("localhost", 6379);
+        return reachable("localhost", 6379);
     }
 
     private static boolean reachable(String host, int port) {
