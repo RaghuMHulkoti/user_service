@@ -9,7 +9,7 @@ import java.time.Clock;
 
 @Configuration
 @EnableScheduling
-@EnableConfigurationProperties(AppProperties.class)
+@EnableConfigurationProperties({AppProperties.class, MailProperties.class})
 public class ApplicationConfig {
 
     @Bean

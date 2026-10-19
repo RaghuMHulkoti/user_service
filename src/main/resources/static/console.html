@@ -164,6 +164,8 @@ details > *:not(summary) { animation: settle .4s var(--ease); }
     </div>
   </header>
 
+  <div id="linkNotice" class="notice" role="status" hidden></div>
+
   <!-- signed out -->
   <div id="signedOut" class="stack">
     <div class="cols">
@@ -194,8 +196,8 @@ details > *:not(summary) { animation: settle .4s var(--ease); }
     </div>
     <section class="panel" aria-labelledby="h-help">
       <h2 id="h-help">Trouble signing in?</h2>
-      <p class="note" style="margin-top:0">No email service is connected yet. The tokens for verifying an email or resetting a password are written to the user service log (the dev setting), so ask whoever runs the service for the token.</p>
-      <details style="margin-top:10px"><summary>Forgot my password</summary>
+      <p class="note" style="margin-top:0">We email a link to confirm your address or reset your password. Opening the link brings you back here. If the service has no mail account yet, the mail is written to its log instead.</p>
+      <details id="resetBox" style="margin-top:10px"><summary>Forgot my password</summary>
         <form id="resetRequestForm" class="tight" style="margin-top:10px" novalidate>
           <label>Email <input id="rsEmail" type="email" autocomplete="email"></label>
           <div class="row"><button type="submit">Request a reset</button></div>
@@ -629,9 +631,28 @@ details > *:not(summary) { animation: settle .4s var(--ease); }
   $("amPrev").addEventListener("click", () => { amPage = Math.max(0, amPage - 1); loadUsers(); });
   $("amNext").addEventListener("click", () => { amPage += 1; loadUsers(); });
 
+  // ----- links from email: ?verify=<token> and ?reset=<token>
+  function showNotice(text, bad) { const n = $("linkNotice"); n.textContent = text; n.className = "notice" + (bad ? " warn" : ""); n.hidden = false; }
+  async function handleMailLink() {
+    const q = new URLSearchParams(location.search);
+    const verify = q.get("verify"), reset = q.get("reset");
+    if (!verify && !reset) return;
+    history.replaceState(null, "", location.pathname);
+    if (verify) {
+      try { await send("POST", "/api/v1/users/verify-email", { token: verify }); showNotice("Your email is confirmed. Thank you."); if (Session.get()) await load(); }
+      catch (e) { showNotice("That confirmation link did not work: " + e.message + ". Sign in and use Resend verification for a new one.", true); }
+    } else {
+      Session.clear(); render();
+      $("resetBox").open = true; $("rtToken").value = reset;
+      showNotice("Choose a new password below to finish resetting it.");
+      $("rtPassword").focus();
+    }
+  }
+
   // ----- start
   render();
   if (Session.get()) load();
+  handleMailLink();
 })();
 </script>
 <script>

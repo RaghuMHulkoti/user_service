@@ -34,13 +34,14 @@ class OutboxPollerTest {
 
     @Mock OutboxGateway repository;
     @Mock EventPublisher publisher;
+    @Mock com.learning.user_service.core.support.UserMailNotifier mailNotifier;
     @Mock TransactionTemplate transactionTemplate;
 
     private OutboxPoller poller;
 
     @BeforeEach
     void setUp() {
-        poller = new OutboxPoller(repository, publisher, transactionTemplate, TestProperties.defaults(),
+        poller = new OutboxPoller(repository, publisher, mailNotifier, transactionTemplate, TestProperties.defaults(),
                 Clock.fixed(NOW, ZoneOffset.UTC));
     }
 

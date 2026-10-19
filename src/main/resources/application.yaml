@@ -107,6 +107,14 @@ app:
     # kafka = publish to Kafka topic below
     publisher: ${EVENTS_PUBLISHER:log}
     topic: domain.user.events
+  mail:
+    # log = print mails to the log; brevo = send through Brevo's HTTPS API (free tier, works on Render)
+    provider: ${MAIL_PROVIDER:log}
+    from-address: ${MAIL_FROM_ADDRESS:}
+    from-name: ${MAIL_FROM_NAME:Bazaar}
+    brevo-api-key: ${BREVO_API_KEY:}
+    # Public address of this service; mail links open <console-url>/console.html
+    console-url: ${PUBLIC_BASE_URL:http://localhost:8081}
   outbox:
     poll-interval: 1000ms
     batch-size: 100

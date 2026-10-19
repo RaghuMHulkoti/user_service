@@ -34,6 +34,11 @@ The default profile is `dev`. In `dev`, the raw email-verification and password-
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Used only when `EVENTS_PUBLISHER=kafka` |
 | `JWT_PRIVATE_KEY_LOCATION` / `JWT_PUBLIC_KEY_LOCATION` | empty | PEM files for the RS256 key pair. If you leave them empty, the app makes a new key at each start, and old access tokens stop working. |
 | `INTERNAL_SERVICE_TOKEN` | `change-me-internal-token` | Shared secret for `/api/v1/internal/**` |
+| `MAIL_PROVIDER` | `log` | `log` prints mails to the log; `brevo` sends them through Brevo's HTTPS API |
+| `BREVO_API_KEY` | _(empty)_ | Brevo API key (secret). Required when `MAIL_PROVIDER=brevo` |
+| `MAIL_FROM_ADDRESS` | _(empty)_ | Sender address; must be a verified sender in Brevo |
+| `MAIL_FROM_NAME` | `Bazaar` | Sender display name |
+| `PUBLIC_BASE_URL` | `http://localhost:8081` | Public address of this service; email links open `<url>/console.html` |
 
 To make a key pair:
 

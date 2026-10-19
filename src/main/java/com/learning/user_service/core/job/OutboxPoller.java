@@ -1,5 +1,6 @@
 package com.learning.user_service.core.job;
 
+import com.learning.user_service.core.support.UserMailNotifier;
 import com.learning.user_service.gateway.EventPublisher;
 import com.learning.user_service.exception.NonRetryablePublishException;
 import com.learning.user_service.config.AppProperties;
@@ -32,14 +33,16 @@ public class OutboxPoller {
 
     private final OutboxGateway outboxGateway;
     private final EventPublisher eventPublisher;
+    private final UserMailNotifier mailNotifier;
     private final TransactionTemplate transactionTemplate;
     private final int batchSize;
     private final Clock clock;
 
-    public OutboxPoller(OutboxGateway outboxGateway, EventPublisher eventPublisher,
+    public OutboxPoller(OutboxGateway outboxGateway, EventPublisher eventPublisher, UserMailNotifier mailNotifier,
                         TransactionTemplate transactionTemplate, AppProperties properties, Clock clock) {
         this.outboxGateway = outboxGateway;
         this.eventPublisher = eventPublisher;
+        this.mailNotifier = mailNotifier;
         this.transactionTemplate = transactionTemplate;
         this.batchSize = properties.outbox().batchSize();
         this.clock = clock;
@@ -62,6 +65,7 @@ public class OutboxPoller {
         int published = 0;
         for (UserOutboxEntity row : batch) {
             try {
+                mailNotifier.notify(row.getEventType(), row.getPayload());
                 eventPublisher.publish(row.getAggregateId().toString(), row.getEventType(), row.getPayload());
                 row.setStatus(OutboxStatus.SENT);
                 row.setSentAt(Instant.now(clock));
