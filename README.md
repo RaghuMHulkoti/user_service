@@ -332,3 +332,7 @@ WHERE LOWER(u.email) = LOWER('you@example.com') AND r.code = 'ADMIN';
 - At-least-once Kafka delivery can send an order mail twice.
 - No OAuth2 authorization-code flow, MFA, CAPTCHA or breached-password check.
 - Other services do not verify the JWT yet; they trust `X-User-Id`.
+
+## License
+
+Copyright (c) 2026 Raghavendra. All rights reserved. The code is published for viewing only; copying or reuse requires written permission. See [LICENSE](LICENSE).
