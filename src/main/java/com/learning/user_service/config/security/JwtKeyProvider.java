@@ -88,6 +88,11 @@ public class JwtKeyProvider {
         }
     }
 
+    /**
+     * Reads a PEM file and returns DER bytes in the form the JDK key specs expect: PKCS#8 for private keys,
+     * X.509 for public keys. PKCS#1 files ("BEGIN RSA PRIVATE KEY" / "BEGIN RSA PUBLIC KEY"), which
+     * {@code openssl genrsa} writes by default, are wrapped into those forms.
+     */
     private static byte[] readPem(String location) throws IOException {
         Resource resource = new DefaultResourceLoader().getResource(location);
         try (InputStream in = resource.getInputStream()) {
@@ -95,7 +100,43 @@ public class JwtKeyProvider {
             String base64 = pem.replaceAll("-----BEGIN [A-Z ]+-----", "")
                     .replaceAll("-----END [A-Z ]+-----", "")
                     .replaceAll("\\s", "");
-            return Base64.getDecoder().decode(base64);
+            byte[] der = Base64.getDecoder().decode(base64);
+            if (pem.contains("BEGIN RSA PRIVATE KEY")) {
+                return der(0x30, der(0x02, new byte[]{0}), RSA_ALGORITHM, der(0x04, der));
+            }
+            if (pem.contains("BEGIN RSA PUBLIC KEY")) {
+                byte[] bits = new byte[der.length + 1];
+                System.arraycopy(der, 0, bits, 1, der.length);
+                return der(0x30, RSA_ALGORITHM, der(0x03, bits));
+            }
+            return der;
         }
+    }
+
+    /** DER AlgorithmIdentifier for rsaEncryption (1.2.840.113549.1.1.1) with NULL parameters. */
+    private static final byte[] RSA_ALGORITHM = {0x30, 0x0d, 0x06, 0x09, 0x2a, (byte) 0x86, 0x48, (byte) 0x86,
+            (byte) 0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00};
+
+    /** One DER element: tag, length, then the concatenated parts. */
+    private static byte[] der(int tag, byte[]... parts) {
+        int length = 0;
+        for (byte[] part : parts) {
+            length += part.length;
+        }
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        out.write(tag);
+        if (length < 128) {
+            out.write(length);
+        } else {
+            int bytes = length > 0xFFFF ? 3 : length > 0xFF ? 2 : 1;
+            out.write(0x80 | bytes);
+            for (int i = bytes - 1; i >= 0; i--) {
+                out.write(length >> (8 * i));
+            }
+        }
+        for (byte[] part : parts) {
+            out.writeBytes(part);
+        }
+        return out.toByteArray();
     }
 }
