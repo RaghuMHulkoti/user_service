@@ -157,7 +157,7 @@ details > *:not(summary) { animation: settle .4s var(--ease); }
     </div>
     <div class="row">
       <a id="orderLink" href="#" target="_blank" rel="noopener">Order console</a>
-      <a id="supplierLink" href="#" target="_blank" rel="noopener">Supplier portal</a>
+      <a id="supplierLink" href="#" target="_blank" rel="noopener" hidden>Supplier portal</a>
       <span id="who" class="muted" hidden></span>
       <button id="signOut" type="button" hidden>Sign out</button>
       <button id="theme" type="button" aria-label="Switch colour theme">Theme</button>
@@ -476,6 +476,8 @@ details > *:not(summary) { animation: settle .4s var(--ease); }
     const s = Session.get();
     $("signedOut").hidden = !!s; $("signedIn").hidden = !s;
     $("signOut").hidden = !s; $("who").hidden = !s;
+    // the supplier portal link is for seller-side accounts only
+    $("supplierLink").hidden = !(s && me && (me.roles || []).some((r) => r === "SUPPLIER" || r === "OPS" || r === "ADMIN"));
     if (!s) { me = null; $("who").textContent = ""; return; }
     if (me) {
       const name = [me.firstName, me.lastName].filter(Boolean).join(" ") || me.email;
