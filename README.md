@@ -20,7 +20,7 @@ Part of **ShopTrail**, a multi-seller marketplace. Full system reference: [`mark
 - Roles (`CUSTOMER`, `SUPPLIER`, `OPS`, `ADMIN`) and admin actions: list, suspend, reactivate, set roles.
 - Emails: welcome, email verification, password reset, order confirmation (Brevo).
 - Publishes `/.well-known/jwks.json` so other services can verify tokens.
-- Serves the **ShopTrail Accounts** console at `/console.html`.
+- Serves the **ShopTrail Accounts** test console at `/console.html`. It exists only to exercise the API from a browser; a dedicated frontend has not been built yet.
 
 ## How it fits
 
