@@ -1,6 +1,6 @@
 # User Service
 
-The Identity & Access service of "Project Bazaar" (see `marketplace_tdd.md`, sections 8.2, 9.1, 11.2, 12.1–12.2, 13, 15, 16).
+The Identity & Access service of "Project ShopTrail" (see `marketplace_tdd.md`, sections 8.2, 9.1, 11.2, 12.1–12.2, 13, 15, 16).
 
 It handles accounts, login, profile, addresses, saved payment methods (PSP tokens only), consent, and roles.
 
@@ -37,7 +37,7 @@ The default profile is `dev`. In `dev`, the raw email-verification and password-
 | `MAIL_PROVIDER` | `log` | `log` prints mails to the log; `brevo` sends them through Brevo's HTTPS API |
 | `BREVO_API_KEY` | _(empty)_ | Brevo API key (secret). Required when `MAIL_PROVIDER=brevo` |
 | `MAIL_FROM_ADDRESS` | _(empty)_ | Sender address; must be a verified sender in Brevo |
-| `MAIL_FROM_NAME` | `Bazaar` | Sender display name |
+| `MAIL_FROM_NAME` | `ShopTrail` | Sender display name |
 | `PUBLIC_BASE_URL` | `http://localhost:8081` | Public address of this service; email links open `<url>/console.html` |
 
 To make a key pair:

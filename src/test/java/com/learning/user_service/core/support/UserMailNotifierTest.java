@@ -17,7 +17,7 @@ class UserMailNotifierTest {
 
     private final MailSender sender = mock(MailSender.class);
     private final UserMailNotifier notifier = new UserMailNotifier(sender, JsonMapper.builder().build(),
-            new MailProperties("log", "no-reply@example.com", "Bazaar", "", "https://users.example.com/"));
+            new MailProperties("log", "no-reply@example.com", "ShopTrail", "", "https://users.example.com/"));
 
     private static String envelope(String data) {
         return "{\"eventType\":\"X\",\"data\":" + data + "}";
@@ -39,7 +39,7 @@ class UserMailNotifierTest {
         notifier.notify("PASSWORD_RESET_REQUESTED", envelope("{\"email\":\"a@example.com\",\"firstName\":\"Asha\",\"resetToken\":\"tok\"}"));
         verify(sender).send(eq("a@example.com"), eq("Asha"), eq("Reset your password"), any(), any());
         notifier.notify("USER_REGISTERED", envelope("{\"email\":\"a@example.com\",\"firstName\":\"Asha\"}"));
-        verify(sender).send(eq("a@example.com"), eq("Asha"), eq("Welcome to Bazaar"), any(), any());
+        verify(sender).send(eq("a@example.com"), eq("Asha"), eq("Welcome to ShopTrail"), any(), any());
     }
 
     @Test

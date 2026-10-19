@@ -18,7 +18,7 @@ class BrevoMailSenderTest {
         new ApplicationContextRunner()
                 .withUserConfiguration(Config.class, BrevoMailSender.class)
                 .withPropertyValues("app.mail.provider=brevo", "app.mail.brevo-api-key=xkeysib-test",
-                        "app.mail.from-address=no-reply@example.com", "app.mail.from-name=Bazaar")
+                        "app.mail.from-address=no-reply@example.com", "app.mail.from-name=ShopTrail")
                 .run(ctx -> assertThat(ctx).hasSingleBean(BrevoMailSender.class));
     }
 
@@ -27,7 +27,7 @@ class BrevoMailSenderTest {
         new ApplicationContextRunner()
                 .withUserConfiguration(Config.class, BrevoMailSender.class)
                 .withPropertyValues("app.mail.provider=brevo", "app.mail.from-address=no-reply@example.com",
-                        "app.mail.from-name=Bazaar")
+                        "app.mail.from-name=ShopTrail")
                 .run(ctx -> assertThat(ctx).hasFailed());
     }
 }

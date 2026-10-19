@@ -36,7 +36,7 @@ public class UserMailNotifier {
         }
         String name = data.path("firstName").asString("there");
         switch (eventType) {
-            case "USER_REGISTERED" -> send(email, name, "Welcome to Bazaar",
+            case "USER_REGISTERED" -> send(email, name, "Welcome to ShopTrail",
                     "Welcome, " + name + "!",
                     "Your account is ready. We sent a separate email to confirm your address; confirming it keeps your account secure.",
                     "Open your account", consoleUrl + "/console.html", "You can sign in any time at");
@@ -74,13 +74,14 @@ public class UserMailNotifier {
     private void send(String email, String name, String subject, String heading, String body,
                       String button, String link, String linkHint) {
         String html = "<div style=\"font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:auto;padding:24px;color:#17211f\">"
+                + "<p style=\"margin:0 0 16px;font-weight:700;letter-spacing:.04em;color:#0d6b5f\">ShopTrail</p>"
                 + "<h2 style=\"margin:0 0 12px\">" + HtmlUtils.htmlEscape(heading) + "</h2>"
                 + "<p style=\"line-height:1.5;white-space:pre-line\">" + HtmlUtils.htmlEscape(body) + "</p>"
                 + (link == null ? "" : "<p><a href=\"" + HtmlUtils.htmlEscape(link) + "\" style=\"display:inline-block;background:#0d6b5f;color:#fff;"
                 + "padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600\">" + HtmlUtils.htmlEscape(button) + "</a></p>"
                 + "<p style=\"font-size:12px;color:#5b6a66\">" + HtmlUtils.htmlEscape(linkHint) + "<br>" + HtmlUtils.htmlEscape(link) + "</p>")
                 + "</div>";
-        String text = heading + "\n\n" + body + "\n" + (link == null ? "" : "\n" + linkHint + "\n" + link + "\n");
+        String text = "ShopTrail\n\n" + heading + "\n\n" + body + "\n" + (link == null ? "" : "\n" + linkHint + "\n" + link + "\n");
         mailSender.send(email, name, subject, html, text);
     }
 
