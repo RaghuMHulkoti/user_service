@@ -51,6 +51,11 @@ spring:
       security.protocol: ${KAFKA_SECURITY_PROTOCOL:SASL_SSL}
       sasl.mechanism: PLAIN
       sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="${KAFKA_USERNAME:default}" password="${KAFKA_PASSWORD:}";
+    consumer:
+      group-id: user-service
+      # only mail for orders confirmed from now on, never replay history
+      auto-offset-reset: latest
+      enable-auto-commit: false
     producer:
       acks: all
       properties:
@@ -111,6 +116,9 @@ app:
     # kafka = publish to Kafka topic below
     publisher: ${EVENTS_PUBLISHER:log}
     topic: domain.user.events
+    # true = listen to domain.order.events and mail the customer when an order is confirmed (needs Kafka)
+    consumer-enabled: ${EVENTS_CONSUMER_ENABLED:false}
+    order-topic: domain.order.events
   mail:
     # log = print mails to the log; brevo = send through Brevo's HTTPS API (free tier, works on Render)
     provider: ${MAIL_PROVIDER:log}

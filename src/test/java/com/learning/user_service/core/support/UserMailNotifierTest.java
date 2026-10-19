@@ -47,4 +47,15 @@ class UserMailNotifierTest {
         notifier.notify("ADDRESS_UPDATED", envelope("{\"email\":\"a@example.com\"}"));
         verify(sender, never()).send(any(), any(), any(), any(), any());
     }
+
+    @Test
+    void orderConfirmedMailListsItemsAndTotal() {
+        var data = JsonMapper.builder().build().readTree(
+                "{\"orderNumber\":\"ORD-1\",\"currency\":\"INR\",\"total\":\"1998.00\","
+                + "\"items\":[{\"title\":\"Tea\",\"quantity\":2,\"unitPrice\":999}]}");
+        notifier.orderConfirmed("a@example.com", "Asha", data);
+        ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
+        verify(sender).send(eq("a@example.com"), eq("Asha"), eq("Order ORD-1 confirmed"), any(), text.capture());
+        assertThat(text.getValue()).contains("2 x Tea (INR 999)").contains("Total: INR 1998.00");
+    }
 }

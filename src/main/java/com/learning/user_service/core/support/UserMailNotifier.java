@@ -56,15 +56,31 @@ public class UserMailNotifier {
         }
     }
 
+    /** Mail for an ORDER_CONFIRMED event from the order service (envelope data already parsed). */
+    public void orderConfirmed(String email, String name, JsonNode data) {
+        String number = data.path("orderNumber").asString("");
+        String currency = data.path("currency").asString("");
+        StringBuilder lines = new StringBuilder();
+        for (JsonNode item : data.path("items")) {
+            lines.append("- ").append(item.path("quantity").asInt(1)).append(" x ")
+                    .append(item.path("title").asString("item")).append(" (").append(currency).append(' ')
+                    .append(item.path("unitPrice").asString("")).append(")\n");
+        }
+        String body = "Hi " + name + ", your order " + number + " is confirmed and paid.\n\n" + lines
+                + "\nTotal: " + currency + " " + data.path("total").asString("");
+        send(email, name, "Order " + number + " confirmed", "Your order is confirmed", body, null, null, null);
+    }
+
     private void send(String email, String name, String subject, String heading, String body,
                       String button, String link, String linkHint) {
         String html = "<div style=\"font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:auto;padding:24px;color:#17211f\">"
                 + "<h2 style=\"margin:0 0 12px\">" + HtmlUtils.htmlEscape(heading) + "</h2>"
-                + "<p style=\"line-height:1.5\">" + HtmlUtils.htmlEscape(body) + "</p>"
-                + "<p><a href=\"" + HtmlUtils.htmlEscape(link) + "\" style=\"display:inline-block;background:#0d6b5f;color:#fff;"
+                + "<p style=\"line-height:1.5;white-space:pre-line\">" + HtmlUtils.htmlEscape(body) + "</p>"
+                + (link == null ? "" : "<p><a href=\"" + HtmlUtils.htmlEscape(link) + "\" style=\"display:inline-block;background:#0d6b5f;color:#fff;"
                 + "padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600\">" + HtmlUtils.htmlEscape(button) + "</a></p>"
-                + "<p style=\"font-size:12px;color:#5b6a66\">" + HtmlUtils.htmlEscape(linkHint) + "<br>" + HtmlUtils.htmlEscape(link) + "</p></div>";
-        String text = heading + "\n\n" + body + "\n\n" + linkHint + "\n" + link + "\n";
+                + "<p style=\"font-size:12px;color:#5b6a66\">" + HtmlUtils.htmlEscape(linkHint) + "<br>" + HtmlUtils.htmlEscape(link) + "</p>")
+                + "</div>";
+        String text = heading + "\n\n" + body + "\n" + (link == null ? "" : "\n" + linkHint + "\n" + link + "\n");
         mailSender.send(email, name, subject, html, text);
     }
 
