@@ -23,11 +23,11 @@ public class BrevoMailSender implements MailSender {
     private final RestClient client;
     private final Map<String, String> sender;
 
-    public BrevoMailSender(MailProperties properties, RestClient.Builder builder) {
+    public BrevoMailSender(MailProperties properties) {
         if (isBlank(properties.brevoApiKey()) || isBlank(properties.fromAddress())) {
             throw new IllegalStateException("app.mail.provider=brevo needs BREVO_API_KEY and MAIL_FROM_ADDRESS");
         }
-        this.client = builder.baseUrl("https://api.brevo.com/v3").defaultHeader("api-key", properties.brevoApiKey()).build();
+        this.client = RestClient.builder().baseUrl("https://api.brevo.com/v3").defaultHeader("api-key", properties.brevoApiKey()).build();
         this.sender = Map.of("name", properties.fromName(), "email", properties.fromAddress());
     }
 
