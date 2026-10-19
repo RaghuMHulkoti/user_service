@@ -1,6 +1,6 @@
 # User Service
 
-The Identity & Access service of "Project ShopTrail" (see `marketplace_tdd.md`, sections 8.2, 9.1, 11.2, 12.1–12.2, 13, 15, 16).
+The Identity & Access service of the ShopTrail marketplace (see `marketplace_tdd.md`, sections 8.2, 9.1, 11.2, 12.1–12.2, 13, 15, 16).
 
 It handles accounts, login, profile, addresses, saved payment methods (PSP tokens only), consent, and roles.
 

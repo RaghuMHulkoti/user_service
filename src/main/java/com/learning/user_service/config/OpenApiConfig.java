@@ -14,7 +14,7 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI userServiceOpenApi() {
         return new OpenAPI()
-                .info(new Info().title("User Service API").version("v1")
+                .info(new Info().title("ShopTrail User Service API").version("v1")
                         .description("Identity & Access: accounts, profile, addresses, payment-method tokens, consent"))
                 .components(new Components().addSecuritySchemes("bearer",
                         new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")))

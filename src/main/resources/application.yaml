@@ -89,7 +89,7 @@ app:
   refresh-token-store: ${REFRESH_TOKEN_STORE:oracle}
   security:
     issuer: ${JWT_ISSUER:http://user-service}
-    tenant-id: bazaar
+    tenant-id: shoptrail
     access-token-ttl: 15m
     refresh-token-ttl: 30d
     bcrypt-strength: 12

@@ -11,7 +11,7 @@ public final class TestProperties {
 
     public static AppProperties defaults() {
         return new AppProperties(
-                new AppProperties.Security("http://user-service", "bazaar", Duration.ofMinutes(15),
+                new AppProperties.Security("http://user-service", "shoptrail", Duration.ofMinutes(15),
                         Duration.ofDays(30), 4, "", "", "test-key", "internal-token", 5, Duration.ofMinutes(15)),
                 new AppProperties.RateLimit(5, 10, 3),
                 new AppProperties.Tokens(Duration.ofHours(24), Duration.ofMinutes(30)),
